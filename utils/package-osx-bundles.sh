@@ -12,17 +12,31 @@ fi
 NAME="$(basename $(git rev-parse --show-toplevel))"
 SNAME="$(echo ${NAME} | tr -d ' ' | tr '/' '-')"
 
+rm -rf au
+rm -rf clap
 rm -rf lv2
 rm -rf vst2
 rm -rf vst3
-rm -rf clap
 
-mkdir lv2 vst2 vst3 clap
+mkdir au clap lv2 vst2 vst3
+cp -RL *.clap clap/
+cp -RL *.component au/
 cp -RL *.lv2 lv2/
 cp -RL *.vst vst2/
 cp -RL *.vst3 vst3/
-cp -RL *.clap clap/
-rm -rf *.lv2 *.vst *.vst3 *.clap
+rm -rf *.component *.clap *.lv2 *.vst *.vst3
+
+pkgbuild \
+  --identifier "studio.kx.distrho.plugins.${SNAME}.components" \
+  --install-location "/Library/Audio/Plug-Ins/Components/" \
+  --root "${PWD}/au/" \
+  ../dpf-${SNAME}-components.pkg
+
+pkgbuild \
+  --identifier "studio.kx.distrho.plugins.${SNAME}.clapbundles" \
+  --install-location "/Library/Audio/Plug-Ins/CLAP/" \
+  --root "${PWD}/clap/" \
+  ../dpf-${SNAME}-clapbundles.pkg
 
 pkgbuild \
   --identifier "studio.kx.distrho.plugins.${SNAME}.lv2bundles" \
@@ -42,12 +56,6 @@ pkgbuild \
   --root "${PWD}/vst3/" \
   ../dpf-${SNAME}-vst3bundles.pkg
 
-pkgbuild \
-  --identifier "studio.kx.distrho.plugins.${SNAME}.clapbundles" \
-  --install-location "/Library/Audio/Plug-Ins/CLAP/" \
-  --root "${PWD}/clap/" \
-  ../dpf-${SNAME}-clapbundles.pkg
-
 cd ..
 
 DPF_UTILS_DIR=$(dirname ${0})
@@ -58,10 +66,11 @@ WELCOME_TXT=${WELCOME_TXT:=${DPF_UTILS_DIR}/plugin.pkg/welcome.txt.in}
 mkdir -p build
 sed -e "s|@name@|${NAME}|" "${WELCOME_TXT}" > build/welcome.txt
 sed -e "s|@builddir@|${PWD}/build|" \
+    -e "s|@aubundleref@|dpf-${SNAME}-components.pkg|" \
+    -e "s|@clapbundleref@|dpf-${SNAME}-clapbundles.pkg|" \
     -e "s|@lv2bundleref@|dpf-${SNAME}-lv2bundles.pkg|" \
     -e "s|@vst2bundleref@|dpf-${SNAME}-vst2bundles.pkg|" \
     -e "s|@vst3bundleref@|dpf-${SNAME}-vst3bundles.pkg|" \
-    -e "s|@clapbundleref@|dpf-${SNAME}-clapbundles.pkg|" \
     -e "s|@name@|${NAME}|g" \
     -e "s|@sname@|${SNAME}|g" \
     ${DPF_UTILS_DIR}/plugin.pkg/package.xml.in > build/package.xml
